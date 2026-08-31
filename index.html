@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>document.documentElement.setAttribute("data-theme", localStorage.getItem("jerseydb-theme") || "dark");</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="A fan-made tracker of jerseys worn in international football matches. Browse match results and kits by team and competition. No products are sold here.">
@@ -22,6 +23,20 @@
     --win:#5FB88A;
     --loss:#D9705C;
     --draw:#E8C15A;
+  }
+
+  :root[data-theme="light"]{
+    --bg:#F4F1E9;
+    --surface:#FFFFFF;
+    --surface-2:#ECE6D8;
+    --line:#D9D0BC;
+    --text:#1C2B21;
+    --text-dim:#5C6F60;
+    --text-dim2:#8B9A8E;
+    --accent:#A67C00;
+    --win:#2F8F57;
+    --loss:#C1503D;
+    --draw:#B8860B;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
@@ -159,11 +174,16 @@
     padding:20px 20px 8px;
     margin-bottom:16px;
   }
-  .jersey-stats h2{
-    font-family:'Anton',sans-serif;font-weight:400;font-size:16px;
-    text-transform:uppercase;letter-spacing:.02em;margin:0 0 14px;
-    color:var(--text-dim);
+  .stats-toggle{
+    width:100%;display:flex;align-items:center;justify-content:space-between;
+    background:none;border:none;padding:0;margin:0;cursor:pointer;
+    font-family:'Anton',sans-serif;font-weight:400;font-size:16px;text-transform:uppercase;
+    letter-spacing:.02em;color:var(--text-dim);
   }
+  .stats-toggle .ti{font-size:17px;transition:transform .15s ease;}
+  .stats-toggle.open .ti{transform:rotate(180deg);}
+  .stats-toggle:hover{color:var(--text);}
+  .stats-body{margin-top:14px;}
   .jersey-stats table{width:100%;border-collapse:collapse;font-size:13px;}
   .jersey-stats th{
     font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.05em;
@@ -284,7 +304,7 @@
   .list-wrap{border:1px solid var(--line);border-radius:12px;overflow:hidden;}
   .list-head, .row{
     display:grid;
-    grid-template-columns: 78px 34px 1fr 30px 12px 30px 1fr 34px 52px 34px;
+    grid-template-columns: 78px 62px 1fr 30px 12px 30px 1fr 62px 52px 34px;
     gap:6px;
     align-items:center;
   }
@@ -319,9 +339,12 @@
     background:var(--surface-2);
     border:1px solid var(--line);
     border-radius:4px;
-    padding:2px 0;
+    padding:2px 3px;
     text-align:center;
     cursor:help;
+    overflow:hidden;
+    white-space:nowrap;
+    text-overflow:ellipsis;
   }
   .row .c-home{text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;}
   .row .c-away{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;}
@@ -360,11 +383,21 @@
   }
 
   :focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+  .theme-toggle{
+    position:absolute;top:16px;right:20px;z-index:5;
+    background:var(--surface);border:1px solid var(--line);border-radius:8px;
+    color:var(--text-dim);width:34px;height:34px;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;font-size:16px;padding:0;
+  }
+  .theme-toggle:hover{color:var(--accent);border-color:var(--accent);}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header class="hero">
+    <button id="theme-toggle" class="theme-toggle" aria-label="Toggle light/dark mode" title="Toggle light/dark mode"><i class="ti ti-moon"></i></button>
     <a href="https://thejerseydatabase.com" class="back-to-hub">&larr; All Sports</a>
     <div class="hero-glow"></div>
     <div class="hero-circle"></div>
@@ -414,7 +447,9 @@
     <p style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-dim2);line-height:1.7;">
       A fan-made project tracking jerseys worn in international football matches.<br>
       Not a store &mdash; no products are sold here. Not affiliated with FIFA, UEFA, or any national football association.<br>
-      <a href="https://thejerseydatabase.com/contact/" style="color:var(--accent);text-decoration:none;">Spot an error? Get in touch &rarr;</a>
+      <a href="https://thejerseydatabase.com/contact.html" style="color:var(--accent);text-decoration:none;">Contact</a> &middot;
+      <a href="https://thejerseydatabase.com/sources.html" style="color:var(--accent);text-decoration:none;">Sources</a> &middot;
+      <a href="https://thejerseydatabase.com/updates.html" style="color:var(--accent);text-decoration:none;">Updates</a>
     </p>
   </footer>
 </div>
@@ -515,7 +550,7 @@ async function loadLiveData(){
 }
 
 const JERSEY_CODE = {Home:'H', Away:'A', Third:'T', Fourth:'4TH', Anniversary:'ANN'};
-function jerseyCode(j){ return j ? (JERSEY_CODE[j] || 'OTH') : 'UNK'; }
+function jerseyCode(j){ return j || 'Unknown'; }
 function jerseyLabel(j){ return j ? j : 'Unknown'; }
 
 const COMP_CODE = {
@@ -901,15 +936,28 @@ function renderJerseyStats(){
   }
 
   statsEl.innerHTML = `
-    <h2>${selectedTeam} \u2014 jersey breakdown${comp ? ' (' + compCode(comp) + ')' : ''}</h2>
-    <table>
-      <thead><tr><th>Jersey</th><th>GP</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>PTS</th></tr></thead>
-      <tbody>
-        ${rows.map(b => rowHtml(b, buckets[b], false)).join('')}
-        ${rowHtml('Total', total, true)}
-      </tbody>
-    </table>`;
+    <button class="stats-toggle" id="stats-toggle" aria-expanded="false">
+      <span>${selectedTeam} \u2014 jersey breakdown${comp ? ' (' + compCode(comp) + ')' : ''}</span><i class="ti ti-chevron-down"></i>
+    </button>
+    <div class="stats-body" id="stats-body" hidden>
+      <table>
+        <thead><tr><th>Jersey</th><th>GP</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>PTS</th></tr></thead>
+        <tbody>
+          ${rows.map(b => rowHtml(b, buckets[b], false)).join('')}
+          ${rowHtml('Total', total, true)}
+        </tbody>
+      </table>
+    </div>`;
   statsEl.hidden = false;
+
+  const toggle = document.getElementById('stats-toggle');
+  const body = document.getElementById('stats-body');
+  toggle.addEventListener('click', () => {
+    const open = !body.hidden;
+    body.hidden = open;
+    toggle.setAttribute('aria-expanded', String(!open));
+    toggle.classList.toggle('open', !open);
+  });
 }
 
 const comps = [...new Set(MATCHES.map(m => m.comp).filter(Boolean))].sort();
@@ -924,6 +972,22 @@ renderList();
 
 // Show the snapshot immediately (above), then try to upgrade to live data from the sheet.
 loadLiveData();
+
+(function(){
+  var btn = document.getElementById('theme-toggle');
+  if(!btn) return;
+  function applyIcon(theme){
+    btn.innerHTML = theme === 'light' ? '<i class="ti ti-sun"></i>' : '<i class="ti ti-moon"></i>';
+  }
+  applyIcon(document.documentElement.getAttribute('data-theme') || 'dark');
+  btn.addEventListener('click', function(){
+    var current = document.documentElement.getAttribute('data-theme') || 'dark';
+    var next = current === 'light' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('jerseydb-theme', next);
+    applyIcon(next);
+  });
+})();
 </script>
 </body>
 </html>
