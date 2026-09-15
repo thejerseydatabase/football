@@ -304,7 +304,7 @@
   .list-wrap{border:1px solid var(--line);border-radius:12px;overflow:hidden;}
   .list-head, .row{
     display:grid;
-    grid-template-columns: 78px 62px 1fr 30px 12px 30px 1fr 62px 52px 34px;
+    grid-template-columns: 78px 76px 1fr 30px 12px 30px 1fr 76px 52px 34px;
     gap:6px;
     align-items:center;
   }
@@ -339,12 +339,16 @@
     background:var(--surface-2);
     border:1px solid var(--line);
     border-radius:4px;
-    padding:2px 3px;
+    padding:3px 4px;
     text-align:center;
     cursor:help;
-    overflow:hidden;
-    white-space:nowrap;
-    text-overflow:ellipsis;
+    white-space:normal;
+    word-break:break-word;
+    line-height:1.25;
+    align-self:stretch;
+    display:flex;
+    align-items:center;
+    justify-content:center;
   }
   .row .c-home{text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;}
   .row .c-away{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;}
@@ -373,7 +377,7 @@
   .list-scroll{max-height:640px;overflow-y:auto;}
 
   @media (max-width:760px){
-    .list-head, .row{grid-template-columns: 60px 26px 1fr 22px 10px 22px 1fr 26px;}
+    .list-head, .row{grid-template-columns: 60px 34px 1fr 22px 10px 22px 1fr 34px;}
     .list-head span:nth-child(9), .list-head span:nth-child(10),
     .row .c-comp, .row .c-photos{display:none;}
   }
@@ -438,7 +442,7 @@
 
   <section class="list-wrap">
     <div class="list-head">
-      <span>Date</span><span>Jsy</span><span style="text-align:right">Home</span><span>HS</span><span></span><span>AS</span><span>Away</span><span>Jsy</span><span style="text-align:center">Comp</span><span style="text-align:center">Photos</span>
+      <span>Date</span><span>Jersey</span><span style="text-align:right">Home</span><span>HS</span><span></span><span>AS</span><span>Away</span><span>Jersey</span><span style="text-align:center">Comp</span><span style="text-align:center">Photos</span>
     </div>
     <div class="list-scroll"><div id="list"></div></div>
   </section>
@@ -447,6 +451,7 @@
     <p style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-dim2);line-height:1.7;">
       A fan-made project tracking jerseys worn in international football matches.<br>
       Not a store &mdash; no products are sold here. Not affiliated with FIFA, UEFA, or any national football association.<br>
+      Images may not reflect exactly what was worn on the field. It is merely a reference photo.<br>
       <a href="https://thejerseydatabase.com/contact.html" style="color:var(--accent);text-decoration:none;">Contact</a> &middot;
       <a href="https://thejerseydatabase.com/sources.html" style="color:var(--accent);text-decoration:none;">Sources</a> &middot;
       <a href="https://thejerseydatabase.com/updates.html" style="color:var(--accent);text-decoration:none;">Updates</a>
@@ -632,12 +637,22 @@ function refreshTeamList(){
   if(TEAM_LIST.includes(curA)) fTeamA.value = curA;
   if(TEAM_LIST.includes(curB)) fTeamB.value = curB;
 
+  refreshJerseyFilterOptions();
+}
+
+// When a specific team is selected in browse mode, only offer jersey types that team has
+// actually worn - not every bucket that exists across the whole competition history.
+function refreshJerseyFilterOptions(){
   const curJ = jerseyFilterEl.value;
-  const jerseyValues = [...KNOWN_JERSEYS];
-  const hasOther = MATCHES.some(m => [m.homeJersey, m.awayJersey].some(j => j && !KNOWN_JERSEYS.includes(j)));
-  const hasUnknown = MATCHES.some(m => (!m.homeJersey && m.home) || (!m.awayJersey && m.away));
-  if(hasOther) jerseyValues.push('Other');
-  if(hasUnknown) jerseyValues.push('Unknown');
+  const scoped = (mode === 'browse' && selectedTeam)
+    ? MATCHES.filter(m => m.home === selectedTeam || m.away === selectedTeam)
+    : MATCHES;
+  const buckets = (mode === 'browse' && selectedTeam)
+    ? scoped.map(m => jerseyBucket(m.home === selectedTeam ? m.homeJersey : m.awayJersey))
+    : scoped.flatMap(m => [jerseyBucket(m.homeJersey), jerseyBucket(m.awayJersey)]);
+  const jerseyValues = KNOWN_JERSEYS.filter(j => buckets.includes(j));
+  if(buckets.includes('Other')) jerseyValues.push('Other');
+  if(buckets.includes('Unknown')) jerseyValues.push('Unknown');
   jerseyFilterEl.innerHTML = '<option value="">Any jersey</option>' + jerseyValues.map(j => `<option value="${j}">${j}</option>`).join('');
   if(jerseyValues.includes(curJ)) jerseyFilterEl.value = curJ;
 }
@@ -648,6 +663,7 @@ function setMode(m){
   modeH2hBtn.classList.toggle('active', m === 'h2h');
   h2hRowEl.style.display = m === 'h2h' ? 'grid' : 'none';
   browseSearchWrapEl.style.display = m === 'browse' ? 'block' : 'none';
+  refreshJerseyFilterOptions();
   applyFilters();
 }
 modeBrowseBtn.addEventListener('click', () => setMode('browse'));
@@ -659,6 +675,10 @@ jerseyFilterEl.addEventListener('change', applyFilters);
 function matchesJerseyFilter(m){
   const jf = jerseyFilterEl.value;
   if(!jf) return true;
+  if(mode === 'browse' && selectedTeam){
+    if(m.home !== selectedTeam && m.away !== selectedTeam) return false;
+    return jerseyBucket(m.home === selectedTeam ? m.homeJersey : m.awayJersey) === jf;
+  }
   const hb = jerseyBucket(m.homeJersey), ab = jerseyBucket(m.awayJersey);
   return hb === jf || ab === jf;
 }
@@ -835,6 +855,7 @@ function pickTeam(team){
   selectedTeam = team;
   searchEl.value = team;
   suggestionsEl.hidden = true;
+  refreshJerseyFilterOptions();
   applyFilters();
 }
 
@@ -842,12 +863,13 @@ function clearSearch(){
   selectedTeam = null;
   searchEl.value = '';
   suggestionsEl.hidden = true;
+  refreshJerseyFilterOptions();
   applyFilters();
   searchEl.focus();
 }
 
 searchEl.addEventListener('input', () => {
-  if(selectedTeam && searchEl.value !== selectedTeam) selectedTeam = null;
+  if(selectedTeam && searchEl.value !== selectedTeam){ selectedTeam = null; refreshJerseyFilterOptions(); }
   renderSuggestions();
   applyFilters();
 });
