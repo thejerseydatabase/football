@@ -534,6 +534,9 @@ function csvRowsToMatches(rows){
       homePens: (r[14] === '' || r[14] === undefined) ? null : parseFloat(r[14]),
       awayPens: (r[15] === '' || r[15] === undefined) ? null : parseFloat(r[15])
     }))
+    // A row only counts as a properly entered fixture once it has both teams and a real
+    // date - a bare draw placeholder (e.g. a team name with no date yet) shouldn't show up.
+    .filter(m => m.away && m.date)
     .sort((a,b) => (b.date||'').localeCompare(a.date||''));
 }
 
