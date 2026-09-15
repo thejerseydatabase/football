@@ -719,7 +719,7 @@ function jerseySlot(team, jersey, img){
     <div class="jersey-slot">
       <div class="jersey-photo ${hasImg ? 'has-image' : 'empty'}">
         ${hasImg
-          ? `<img src="${img}" alt="${team} ${jersey||''} jersey" loading="lazy" onerror="this.parentElement.classList.remove('has-image');this.parentElement.classList.add('empty');this.remove();this.parentElement.insertAdjacentHTML('beforeend','<i class=\'ti ti-shirt-sport\'></i>');">`
+          ? `<img src="${img}" alt="${team} ${jersey||''} jersey" loading="lazy" onerror="var p=this.parentElement;p.classList.remove('has-image');p.classList.add('empty');this.remove();p.insertAdjacentHTML('beforeend','<i class=&quot;ti ti-shirt-sport&quot;></i>');">`
           : `<i class="ti ti-shirt-sport"></i>`}
       </div>
       <p class="no-photo-label">${hasImg ? '' : 'no jersey photo yet'}</p>
