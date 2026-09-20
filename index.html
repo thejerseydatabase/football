@@ -137,7 +137,7 @@
   }
   .multi-select-option{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:6px;font-size:13px;cursor:pointer;}
   .multi-select-option:hover{background:var(--surface-2);}
-  .multi-select-option input{accent-color:var(--accent);width:14px;height:14px;cursor:pointer;flex-shrink:0;}
+  .multi-select-panel .multi-select-option input{accent-color:var(--accent);width:14px;min-width:14px;max-width:14px;height:14px;cursor:pointer;flex-shrink:0;}
   .multi-select-empty{padding:8px;font-size:12.5px;color:var(--text-dim2);}
   .multi-select-header{
     display:flex;align-items:center;justify-content:space-between;gap:8px;
@@ -468,13 +468,13 @@
       <option value="fixtures">Fixtures</option>
       <option value="all">All</option>
     </select>
-    <select id="comp-filter" aria-label="Filter by competition">
-      <option value="">All competitions</option>
-    </select>
     <div class="multi-select" id="jersey-filter-wrap">
       <button type="button" class="multi-select-btn" id="jersey-filter-btn" aria-haspopup="listbox" aria-expanded="false">Any jersey</button>
       <div class="multi-select-panel" id="jersey-filter-panel" hidden></div>
     </div>
+    <select id="comp-filter" aria-label="Filter by competition">
+      <option value="">All competitions</option>
+    </select>
   </section>
 
   <div class="clear-row">
