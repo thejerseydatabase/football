@@ -120,6 +120,33 @@
   .h2h-row select{background:var(--surface);border:1px solid var(--line);color:var(--text);font-family:'Inter',sans-serif;font-size:13.5px;padding:10px 12px;border-radius:8px;outline:none;width:100%;}
   .h2h-row select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(232,184,75,0.15);}
   .vs-sep{font-family:'Anton',sans-serif;color:var(--text-dim);font-size:16px;text-align:center;}
+  /* Jersey filter: a checkbox dropdown instead of a plain select, so
+     seeing every match where a team wore any of several jersey types
+     doesn't mean re-running the filter once per type. */
+  .multi-select{position:relative;flex:1;min-width:150px;}
+  .multi-select-btn{
+    background:var(--surface);border:1px solid var(--line);color:var(--text);
+    font-family:'Inter',sans-serif;font-size:14px;padding:11px 14px;border-radius:8px;outline:none;width:100%;
+    text-align:left;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .multi-select-btn:focus, .multi-select-btn[aria-expanded="true"]{border-color:var(--accent);box-shadow:0 0 0 3px rgba(232,184,75,0.15);}
+  .multi-select-panel{
+    position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:20;max-height:260px;overflow-y:auto;
+    background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.25);
+  }
+  .multi-select-option{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:6px;font-size:13px;cursor:pointer;}
+  .multi-select-option:hover{background:var(--surface-2);}
+  .multi-select-option input{accent-color:var(--accent);width:14px;height:14px;cursor:pointer;flex-shrink:0;}
+  .multi-select-empty{padding:8px;font-size:12.5px;color:var(--text-dim2);}
+  .multi-select-header{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    padding:4px 8px 8px;margin-bottom:4px;border-bottom:1px solid var(--line);
+    font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.04em;
+    color:var(--text-dim2);text-transform:uppercase;
+  }
+  .multi-select-clear{background:none;border:none;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.04em;text-decoration:underline;cursor:pointer;padding:0;flex-shrink:0;}
+  .multi-select-clear:hover{color:var(--accent);}
 
   .controls{
     display:flex;
@@ -444,9 +471,10 @@
     <select id="comp-filter" aria-label="Filter by competition">
       <option value="">All competitions</option>
     </select>
-    <select id="jersey-filter" aria-label="Filter by jersey">
-      <option value="">Any jersey</option>
-    </select>
+    <div class="multi-select" id="jersey-filter-wrap">
+      <button type="button" class="multi-select-btn" id="jersey-filter-btn" aria-haspopup="listbox" aria-expanded="false">Any jersey</button>
+      <div class="multi-select-panel" id="jersey-filter-panel" hidden></div>
+    </div>
   </section>
 
   <div class="clear-row">
@@ -615,7 +643,12 @@ const fTeam = document.getElementById('f-team');
 const fYear = document.getElementById('f-year');
 const fStatus = document.getElementById('f-status');
 const compEl = document.getElementById('comp-filter');
-const jerseyFilterEl = document.getElementById('jersey-filter');
+const jerseyFilterBtn = document.getElementById('jersey-filter-btn');
+const jerseyFilterPanel = document.getElementById('jersey-filter-panel');
+// Multiple jersey buckets can be checked at once rather than one at a
+// time - selectedJerseys is the actual filter state; the button/panel
+// are just its UI.
+let selectedJerseys = new Set();
 const clearBtn = document.getElementById('clear-filters');
 const statsEl = document.getElementById('jersey-stats');
 const modeBrowseBtn = document.getElementById('mode-browse');
@@ -654,10 +687,16 @@ function setDefaultYear(){
   fYear.value = years.length ? String(years[0]) : '';
 }
 
+function updateJerseyFilterBtnLabel(){
+  if(selectedJerseys.size === 0) jerseyFilterBtn.textContent = 'Any jersey';
+  else if(selectedJerseys.size === 1) jerseyFilterBtn.textContent = [...selectedJerseys][0];
+  else jerseyFilterBtn.textContent = selectedJerseys.size + ' jerseys selected';
+}
 // When a specific team is selected in browse mode, only offer jersey types that team has
 // actually worn - not every bucket that exists across the whole competition history.
+// KNOWN_JERSEYS is already in the order they should show (Home/Away first), so no
+// separate priority sort is needed the way the other trackers' free-text names need one.
 function refreshJerseyFilterOptions(){
-  const curJ = jerseyFilterEl.value;
   const scoped = (mode === 'browse' && fTeam.value)
     ? MATCHES.filter(m => m.home === fTeam.value || m.away === fTeam.value)
     : MATCHES;
@@ -667,9 +706,42 @@ function refreshJerseyFilterOptions(){
   const jerseyValues = KNOWN_JERSEYS.filter(j => buckets.includes(j));
   if(buckets.includes('Other')) jerseyValues.push('Other');
   if(buckets.includes('Unknown')) jerseyValues.push('Unknown');
-  jerseyFilterEl.innerHTML = '<option value="">Any jersey</option>' + jerseyValues.map(j => `<option value="${j}">${j}</option>`).join('');
-  if(jerseyValues.includes(curJ)) jerseyFilterEl.value = curJ;
+  selectedJerseys = new Set([...selectedJerseys].filter(v => jerseyValues.includes(v)));
+  jerseyFilterPanel.innerHTML = jerseyValues.length
+    ? `<div class="multi-select-header"><span>Select multiple &mdash; matches any checked</span><button type="button" class="multi-select-clear" id="jersey-filter-clear">None</button></div>` +
+      jerseyValues.map(j => `
+        <label class="multi-select-option">
+          <input type="checkbox" value="${j}" ${selectedJerseys.has(j) ? 'checked' : ''}>
+          <span>${j}</span>
+        </label>`).join('')
+    : '<div class="multi-select-empty">No jerseys match the current filters</div>';
+  updateJerseyFilterBtnLabel();
 }
+jerseyFilterPanel.addEventListener('change', e => {
+  if(e.target.tagName !== 'INPUT') return;
+  if(e.target.checked) selectedJerseys.add(e.target.value);
+  else selectedJerseys.delete(e.target.value);
+  updateJerseyFilterBtnLabel();
+  applyFilters();
+});
+jerseyFilterPanel.addEventListener('click', e => {
+  if(e.target.id !== 'jersey-filter-clear') return;
+  selectedJerseys.clear();
+  refreshJerseyFilterOptions();
+  applyFilters();
+});
+jerseyFilterBtn.addEventListener('click', e => {
+  e.stopPropagation();
+  const isOpen = !jerseyFilterPanel.hidden;
+  jerseyFilterPanel.hidden = isOpen;
+  jerseyFilterBtn.setAttribute('aria-expanded', String(!isOpen));
+});
+document.addEventListener('click', e => {
+  if(!jerseyFilterPanel.hidden && !document.getElementById('jersey-filter-wrap').contains(e.target)){
+    jerseyFilterPanel.hidden = true;
+    jerseyFilterBtn.setAttribute('aria-expanded', 'false');
+  }
+});
 
 function setMode(m){
   mode = m;
@@ -684,20 +756,18 @@ modeBrowseBtn.addEventListener('click', () => setMode('browse'));
 modeH2hBtn.addEventListener('click', () => setMode('h2h'));
 fTeamA.addEventListener('change', applyFilters);
 fTeamB.addEventListener('change', applyFilters);
-jerseyFilterEl.addEventListener('change', applyFilters);
 fTeam.addEventListener('change', () => { refreshJerseyFilterOptions(); applyFilters(); });
 fYear.addEventListener('change', applyFilters);
 fStatus.addEventListener('change', applyFilters);
 
 function matchesJerseyFilter(m){
-  const jf = jerseyFilterEl.value;
-  if(!jf) return true;
+  if(!selectedJerseys.size) return true;
   if(mode === 'browse' && fTeam.value){
     if(m.home !== fTeam.value && m.away !== fTeam.value) return false;
-    return jerseyBucket(m.home === fTeam.value ? m.homeJersey : m.awayJersey) === jf;
+    return selectedJerseys.has(jerseyBucket(m.home === fTeam.value ? m.homeJersey : m.awayJersey));
   }
   const hb = jerseyBucket(m.homeJersey), ab = jerseyBucket(m.awayJersey);
-  return hb === jf || ab === jf;
+  return selectedJerseys.has(hb) || selectedJerseys.has(ab);
 }
 
 function fmtDate(d, short){
@@ -862,7 +932,7 @@ compEl.addEventListener('change', applyFilters);
 clearBtn.addEventListener('click', () => {
   fTeam.value = '';
   fYear.value = '';
-  jerseyFilterEl.value = '';
+  selectedJerseys.clear();
   compEl.value = '';
   refreshJerseyFilterOptions();
   setDefaultStatus();
