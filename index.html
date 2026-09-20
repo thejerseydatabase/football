@@ -483,6 +483,23 @@
     <button id="clear-filters">Clear all filters</button>
   </div>
 
+  <section class="jersey-stats" id="ladder-box">
+    <button class="stats-toggle" id="ladder-toggle" aria-expanded="false">
+      <span>Jersey ladder</span><i class="ti ti-chevron-down"></i>
+    </button>
+    <div class="stats-body" id="ladder-body" hidden>
+      <div class="filters" style="grid-template-columns:200px;margin-bottom:14px;">
+        <select id="f-ladder-year" aria-label="Jersey ladder year"><option value="">All-time</option></select>
+      </div>
+      <div class="list-scroll" style="max-height:480px;">
+        <table>
+          <thead><tr><th style="text-align:left">#</th><th style="text-align:left">Team</th><th style="text-align:left">Jersey</th><th>GP</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>PTS</th></tr></thead>
+          <tbody id="ladder-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
   <section class="jersey-stats" id="jersey-stats" hidden></section>
 
   <section class="matchup" id="matchup"></section>
@@ -652,6 +669,10 @@ const jerseyFilterPanel = document.getElementById('jersey-filter-panel');
 let selectedJerseys = new Set();
 const clearBtn = document.getElementById('clear-filters');
 const statsEl = document.getElementById('jersey-stats');
+const ladderToggle = document.getElementById('ladder-toggle');
+const ladderBody = document.getElementById('ladder-body');
+const fLadderYear = document.getElementById('f-ladder-year');
+const ladderTbody = document.getElementById('ladder-tbody');
 const modeBrowseBtn = document.getElementById('mode-browse');
 const modeH2hBtn = document.getElementById('mode-h2h');
 const h2hRowEl = document.getElementById('h2h-row');
@@ -678,7 +699,12 @@ function refreshTeamList(){
   fYear.innerHTML = '<option value="">Any year</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
   if(years.some(y => String(y) === curYear)) fYear.value = curYear;
 
+  const curLadderYear = fLadderYear.value;
+  fLadderYear.innerHTML = '<option value="">All-time</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
+  if(years.some(y => String(y) === curLadderYear)) fLadderYear.value = curLadderYear;
+
   refreshJerseyFilterOptions();
+  renderJerseyLadder();
 }
 // Default to the most recent year - a multi-year history shouldn't require scrolling past
 // everything older just to see the current one. Only called on initial/live-data load, never
@@ -946,6 +972,49 @@ clearBtn.addEventListener('click', () => {
 const KNOWN_JERSEYS = ['Home','Away','Third','Fourth','Anniversary'];
 function jerseyBucket(j){ return j && KNOWN_JERSEYS.includes(j) ? j : (j ? 'Other' : 'Unknown'); }
 
+// A ladder entry is one team's stint in one jersey bucket - e.g. "Vietnam - Home" - ranked
+// the same way a league ladder is: points first, then goal difference, wins, games played,
+// then goals for.
+function renderJerseyLadder(){
+  const yr = fLadderYear.value;
+  const rows = MATCHES.filter(m => isPlayed(m) && (!yr || String(m.year) === yr));
+  const buckets = {};
+  function bump(team, jersey, gf, ga, result){
+    const bucket = jerseyBucket(jersey);
+    const key = team + '\u0001' + bucket;
+    if(!buckets[key]) buckets[key] = {team, jersey: bucket, gp:0,w:0,d:0,l:0,gf:0,ga:0,pts:0};
+    const b = buckets[key];
+    b.gp++; b.gf += gf; b.ga += ga;
+    // Points always follow the regulation scoreline (a shootout never turns a draw into 3/0).
+    b.pts += (gf === ga) ? 1 : (gf > ga ? 3 : 0);
+    if(result === 'win') b.w++;
+    else if(result === 'loss') b.l++;
+    else b.d++;
+  }
+  rows.forEach(m => {
+    bump(m.home, m.homeJersey, m.homeScore, m.awayScore, resultFor(m, 'home'));
+    bump(m.away, m.awayJersey, m.awayScore, m.homeScore, resultFor(m, 'away'));
+  });
+
+  const list = Object.values(buckets).map(b => Object.assign({}, b, {gd: b.gf - b.ga}));
+  list.sort((a,b) => b.pts - a.pts || b.gd - a.gd || b.w - a.w || b.gp - a.gp || b.gf - a.gf);
+
+  if(list.length === 0){
+    ladderTbody.innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--text-dim);padding:16px;">No results for this selection.</td></tr>`;
+    return;
+  }
+  ladderTbody.innerHTML = list.map((r, i) => `
+    <tr>
+      <td style="text-align:left">${i+1}</td>
+      <td style="text-align:left">${r.team}</td>
+      <td style="text-align:left">${r.jersey}</td>
+      <td>${r.gp}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td>
+      <td>${r.gf}</td><td>${r.ga}</td>
+      <td class="${r.gd > 0 ? 'gd-pos' : (r.gd < 0 ? 'gd-neg' : '')}">${r.gd > 0 ? '+' : ''}${r.gd}</td>
+      <td>${r.pts}</td>
+    </tr>`).join('');
+}
+
 function renderJerseyStats(){
   if(!fTeam.value){ statsEl.hidden = true; statsEl.innerHTML = ''; return; }
 
@@ -1032,6 +1101,14 @@ refreshTeamList();
 setDefaultYear();
 setDefaultStatus();
 applyFilters();
+
+ladderToggle.addEventListener('click', () => {
+  const open = !ladderBody.hidden;
+  ladderBody.hidden = open;
+  ladderToggle.setAttribute('aria-expanded', String(!open));
+  ladderToggle.classList.toggle('open', !open);
+});
+fLadderYear.addEventListener('change', renderJerseyLadder);
 
 // Show the snapshot immediately (above), then try to upgrade to live data from the sheet.
 loadLiveData();
