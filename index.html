@@ -485,7 +485,7 @@
 
   <section class="jersey-stats" id="ladder-box">
     <button class="stats-toggle" id="ladder-toggle" aria-expanded="false">
-      <span>Jersey Ladder — Every Country</span><i class="ti ti-chevron-down"></i>
+      <span id="ladder-heading">Jersey Ladder — Every Country</span><i class="ti ti-chevron-down"></i>
     </button>
     <div class="stats-body" id="ladder-body" hidden>
       <div class="controls" style="margin-bottom:14px;">
@@ -675,6 +675,7 @@ const ladderBody = document.getElementById('ladder-body');
 const fLadderYear = document.getElementById('f-ladder-year');
 const fLadderComp = document.getElementById('f-ladder-comp');
 const ladderTbody = document.getElementById('ladder-tbody');
+const ladderHeading = document.getElementById('ladder-heading');
 const modeBrowseBtn = document.getElementById('mode-browse');
 const modeH2hBtn = document.getElementById('mode-h2h');
 const h2hRowEl = document.getElementById('h2h-row');
@@ -785,11 +786,12 @@ function setMode(m){
   browseSearchWrapEl.style.display = m === 'browse' ? 'flex' : 'none';
   refreshJerseyFilterOptions();
   applyFilters();
+  renderJerseyLadder();
 }
 modeBrowseBtn.addEventListener('click', () => setMode('browse'));
 modeH2hBtn.addEventListener('click', () => setMode('h2h'));
-fTeamA.addEventListener('change', applyFilters);
-fTeamB.addEventListener('change', applyFilters);
+fTeamA.addEventListener('change', () => { applyFilters(); renderJerseyLadder(); });
+fTeamB.addEventListener('change', () => { applyFilters(); renderJerseyLadder(); });
 fTeam.addEventListener('change', () => { refreshJerseyFilterOptions(); applyFilters(); });
 fYear.addEventListener('change', applyFilters);
 fStatus.addEventListener('change', applyFilters);
@@ -985,7 +987,14 @@ function jerseyBucket(j){ return j && KNOWN_JERSEYS.includes(j) ? j : (j ? 'Othe
 function renderJerseyLadder(){
   const yr = fLadderYear.value;
   const comp = fLadderComp.value;
-  const rows = MATCHES.filter(m => isPlayed(m) && (!yr || String(m.year) === yr) && (!comp || m.comp === comp));
+  let rows = MATCHES.filter(m => isPlayed(m) && (!yr || String(m.year) === yr) && (!comp || m.comp === comp));
+  if(mode === 'h2h'){
+    const a = fTeamA.value, b = fTeamB.value;
+    rows = rows.filter(m => (m.home === a && m.away === b) || (m.home === b && m.away === a));
+    ladderHeading.textContent = 'Jersey Ladder \u2014 ' + a + ' vs ' + b;
+  } else {
+    ladderHeading.textContent = 'Jersey Ladder \u2014 Every Country';
+  }
   const buckets = {};
   function bump(team, jersey, gf, ga, result){
     const bucket = jerseyBucket(jersey);
