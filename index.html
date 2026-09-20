@@ -404,6 +404,7 @@
   .c-photos{display:flex;gap:3px;justify-content:center;}
   .photo-dot{width:7px;height:7px;border-radius:50%;background:var(--loss);}
   .photo-dot.filled{background:var(--win);}
+  .row-note{grid-column:1/-1;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.03em;color:var(--text-dim2);padding-top:4px;}
   .no-results{padding:32px 16px;text-align:center;color:var(--text-dim);font-size:13.5px;}
   .list-scroll{max-height:640px;overflow-y:auto;}
 
@@ -862,6 +863,7 @@ function renderList(){
     const ar = played ? resultFor(m,'away') : null;
     const hs = played ? m.homeScore : '';
     const as = played ? m.awayScore : '';
+    const penNote = wentToPens(m) ? `<span class="row-note">(${m.homePens}&ndash;${m.awayPens} on penalties)</span>` : '';
     return `
       <div class="row ${i===activeIndex?'active':''}" data-i="${i}" tabindex="0">
         <span class="c-date">${fmtDate(m.date, true)}</span>
@@ -874,6 +876,7 @@ function renderList(){
         <span class="jcode" title="${jerseyLabel(m.awayJersey)} jersey"><span class="jname-full">${jerseyCode(m.awayJersey)}</span><span class="jname-short">${jerseyAbbrev(m.awayJersey)}</span></span>
         <span class="c-comp" title="${m.comp || ''}${m.stage ? ' \u2014 ' + m.stage : ''}">${compCode(m.comp)}</span>
         <span class="c-photos"><span class="photo-dot ${m.homeImg?'filled':''}"></span><span class="photo-dot ${m.awayImg?'filled':''}"></span></span>
+        ${penNote}
       </div>`;
   }).join('');
 
