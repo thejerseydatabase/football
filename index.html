@@ -950,8 +950,9 @@ function renderJerseyStats(){
   if(!fTeam.value){ statsEl.hidden = true; statsEl.innerHTML = ''; return; }
 
   const comp = compEl.value;
+  const year = fYear.value;
   const teamMatches = MATCHES.filter(m =>
-    (m.home === fTeam.value || m.away === fTeam.value) && (!comp || m.comp === comp)
+    (m.home === fTeam.value || m.away === fTeam.value) && (!comp || m.comp === comp) && (!year || String(m.year) === year)
   );
 
   const buckets = {};
@@ -998,7 +999,7 @@ function renderJerseyStats(){
 
   statsEl.innerHTML = `
     <button class="stats-toggle" id="stats-toggle" aria-expanded="false">
-      <span>${fTeam.value} \u2014 jersey breakdown${comp ? ' (' + compCode(comp) + ')' : ''}</span><i class="ti ti-chevron-down"></i>
+      <span>${fTeam.value} \u2014 jersey breakdown${comp ? ' (' + compCode(comp) + ')' : ''}${year ? ' \u2014 ' + year : ''}</span><i class="ti ti-chevron-down"></i>
     </button>
     <div class="stats-body" id="stats-body" hidden>
       <table>
