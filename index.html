@@ -126,7 +126,7 @@
   .multi-select{position:relative;flex:1;min-width:150px;}
   .multi-select-btn{
     background:var(--surface);border:1px solid var(--line);color:var(--text);
-    font-family:'Inter',sans-serif;font-size:14px;padding:11px 14px;border-radius:8px;outline:none;width:100%;
+    font-family:'Inter',sans-serif;font-size:13.5px;padding:10px 12px;border-radius:8px;outline:none;width:100%;
     text-align:left;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   }
   .multi-select-btn:focus, .multi-select-btn[aria-expanded="true"]{border-color:var(--accent);box-shadow:0 0 0 3px rgba(232,184,75,0.15);}
@@ -159,8 +159,8 @@
     border:1px solid var(--line);
     color:var(--text);
     font-family:'Inter',sans-serif;
-    font-size:14px;
-    padding:11px 14px;
+    font-size:13.5px;
+    padding:10px 12px;
     border-radius:8px;
     outline:none;
   }
@@ -485,11 +485,12 @@
 
   <section class="jersey-stats" id="ladder-box">
     <button class="stats-toggle" id="ladder-toggle" aria-expanded="false">
-      <span>Jersey ladder</span><i class="ti ti-chevron-down"></i>
+      <span>Jersey Ladder — Every Country</span><i class="ti ti-chevron-down"></i>
     </button>
     <div class="stats-body" id="ladder-body" hidden>
-      <div class="filters" style="grid-template-columns:200px;margin-bottom:14px;">
+      <div class="controls" style="margin-bottom:14px;">
         <select id="f-ladder-year" aria-label="Jersey ladder year"><option value="">All-time</option></select>
+        <select id="f-ladder-comp" aria-label="Jersey ladder competition"><option value="">All competitions</option></select>
       </div>
       <div class="list-scroll" style="max-height:480px;">
         <table>
@@ -672,6 +673,7 @@ const statsEl = document.getElementById('jersey-stats');
 const ladderToggle = document.getElementById('ladder-toggle');
 const ladderBody = document.getElementById('ladder-body');
 const fLadderYear = document.getElementById('f-ladder-year');
+const fLadderComp = document.getElementById('f-ladder-comp');
 const ladderTbody = document.getElementById('ladder-tbody');
 const modeBrowseBtn = document.getElementById('mode-browse');
 const modeH2hBtn = document.getElementById('mode-h2h');
@@ -702,6 +704,11 @@ function refreshTeamList(){
   const curLadderYear = fLadderYear.value;
   fLadderYear.innerHTML = '<option value="">All-time</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
   if(years.some(y => String(y) === curLadderYear)) fLadderYear.value = curLadderYear;
+
+  const curLadderComp = fLadderComp.value;
+  const ladderComps = [...new Set(MATCHES.map(m => m.comp).filter(Boolean))].sort();
+  fLadderComp.innerHTML = '<option value="">All competitions</option>' + ladderComps.map(c => `<option value="${c}">${c}</option>`).join('');
+  if(ladderComps.includes(curLadderComp)) fLadderComp.value = curLadderComp;
 
   refreshJerseyFilterOptions();
   renderJerseyLadder();
@@ -977,7 +984,8 @@ function jerseyBucket(j){ return j && KNOWN_JERSEYS.includes(j) ? j : (j ? 'Othe
 // then goals for.
 function renderJerseyLadder(){
   const yr = fLadderYear.value;
-  const rows = MATCHES.filter(m => isPlayed(m) && (!yr || String(m.year) === yr));
+  const comp = fLadderComp.value;
+  const rows = MATCHES.filter(m => isPlayed(m) && (!yr || String(m.year) === yr) && (!comp || m.comp === comp));
   const buckets = {};
   function bump(team, jersey, gf, ga, result){
     const bucket = jerseyBucket(jersey);
@@ -1016,6 +1024,8 @@ function renderJerseyLadder(){
 }
 
 function renderJerseyStats(){
+  const prevStatsBody = document.getElementById('stats-body');
+  const statsWasOpen = !!(prevStatsBody && !prevStatsBody.hidden);
   if(!fTeam.value){ statsEl.hidden = true; statsEl.innerHTML = ''; return; }
 
   const comp = compEl.value;
@@ -1067,10 +1077,10 @@ function renderJerseyStats(){
   }
 
   statsEl.innerHTML = `
-    <button class="stats-toggle" id="stats-toggle" aria-expanded="false">
+    <button class="stats-toggle" id="stats-toggle" aria-expanded="${statsWasOpen}">
       <span>${fTeam.value} \u2014 jersey breakdown${comp ? ' (' + compCode(comp) + ')' : ''}${year ? ' \u2014 ' + year : ''}</span><i class="ti ti-chevron-down"></i>
     </button>
-    <div class="stats-body" id="stats-body" hidden>
+    <div class="stats-body" id="stats-body" ${statsWasOpen ? '' : 'hidden'}>
       <table>
         <thead><tr><th>Jersey</th><th>GP</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>PTS</th></tr></thead>
         <tbody>
@@ -1083,6 +1093,7 @@ function renderJerseyStats(){
 
   const toggle = document.getElementById('stats-toggle');
   const body = document.getElementById('stats-body');
+  toggle.classList.toggle('open', statsWasOpen);
   toggle.addEventListener('click', () => {
     const open = !body.hidden;
     body.hidden = open;
@@ -1109,6 +1120,7 @@ ladderToggle.addEventListener('click', () => {
   ladderToggle.classList.toggle('open', !open);
 });
 fLadderYear.addEventListener('change', renderJerseyLadder);
+fLadderComp.addEventListener('change', renderJerseyLadder);
 
 // Show the snapshot immediately (above), then try to upgrade to live data from the sheet.
 loadLiveData();
