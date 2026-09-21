@@ -578,6 +578,7 @@ function csvRowsToMatches(rows){
         date,
         year: date ? parseInt(date.slice(0,4), 10) : null,
         host: r[1] || null,
+        venue: r[2] || null,
         home: r[3],
         homeJersey: r[4] || null,
         homeImg: r[5] || null,
@@ -868,7 +869,7 @@ function renderMatchup(m){
     scoreHtml = `<div class="vs-label">VS</div><p class="ft-label">Not yet played</p>`;
   }
 
-  const metaParts = [m.comp, m.stage, m.host, fmtDate(m.date)].filter(Boolean);
+  const metaParts = [m.comp, m.stage, m.venue, m.host, fmtDate(m.date)].filter(Boolean);
 
   matchupEl.innerHTML = `
     <div class="matchup-grid">
