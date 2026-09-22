@@ -117,8 +117,8 @@
   .mode-toggle button{flex:1;padding:11px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--text);font-family:'Inter',sans-serif;font-size:13.5px;font-weight:500;cursor:pointer;}
   .mode-toggle button.active{border-color:var(--accent);color:var(--accent);background:var(--surface-2);}
   .h2h-row{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;margin-bottom:16px;}
-  .h2h-row select, #f-h2h-year{background:var(--surface);border:1px solid var(--line);color:var(--text);font-family:'Inter',sans-serif;font-size:13.5px;padding:10px 12px;border-radius:8px;outline:none;width:100%;}
-  .h2h-row select:focus, #f-h2h-year:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(232,184,75,0.15);}
+  .h2h-row select, #f-h2h-year, #f-h2h-comp{background:var(--surface);border:1px solid var(--line);color:var(--text);font-family:'Inter',sans-serif;font-size:13.5px;padding:10px 12px;border-radius:8px;outline:none;width:100%;}
+  .h2h-row select:focus, #f-h2h-year:focus, #f-h2h-comp:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(232,184,75,0.15);}
   .vs-sep{font-family:'Anton',sans-serif;color:var(--text-dim);font-size:16px;text-align:center;}
   /* Jersey filter: a checkbox dropdown instead of a plain select, so
      seeing every match where a team wore any of several jersey types
@@ -457,7 +457,10 @@
       <span class="vs-sep">VS</span>
       <select id="f-teamB" aria-label="Team B"></select>
     </div>
-    <select id="f-h2h-year" aria-label="Year" style="margin-top:10px;width:100%;max-width:220px;"><option value="">All years</option></select>
+    <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;">
+      <select id="f-h2h-year" aria-label="Year" style="width:auto;min-width:150px;flex:1;"><option value="">All years</option></select>
+      <select id="f-h2h-comp" aria-label="Competition" style="width:auto;min-width:150px;flex:1;"><option value="">All competitions</option></select>
+    </div>
   </div>
 
   <section class="controls" id="browse-search-wrap">
@@ -687,6 +690,7 @@ const browseSearchWrapEl = document.getElementById('browse-search-wrap');
 const fTeamA = document.getElementById('f-teamA');
 const fTeamB = document.getElementById('f-teamB');
 const fH2hYear = document.getElementById('f-h2h-year');
+const fH2hComp = document.getElementById('f-h2h-comp');
 let mode = 'browse';
 let activeIndex = 0;
 let filtered = MATCHES;
@@ -718,6 +722,13 @@ function refreshTeamList(){
   const curH2hYear = fH2hYear.value;
   fH2hYear.innerHTML = '<option value="">All years</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
   if(years.some(y => String(y) === curH2hYear)) fH2hYear.value = curH2hYear;
+
+  // Same idea as fH2hYear above — Browse's competition filter (compEl)
+  // lives in the same hidden-in-H2H section, so H2H gets its own here too.
+  const curH2hComp = fH2hComp.value;
+  const h2hComps = [...new Set(MATCHES.map(m => m.comp).filter(Boolean))].sort();
+  fH2hComp.innerHTML = '<option value="">All competitions</option>' + h2hComps.map(c => `<option value="${c}">${c} (${compCode(c)})</option>`).join('');
+  if(h2hComps.includes(curH2hComp)) fH2hComp.value = curH2hComp;
 
   const curLadderComp = fLadderComp.value;
   const ladderComps = [...new Set(MATCHES.map(m => m.comp).filter(Boolean))].sort();
@@ -808,6 +819,7 @@ fTeamB.addEventListener('change', () => { applyFilters(); renderJerseyLadder(); 
 fTeam.addEventListener('change', () => { refreshJerseyFilterOptions(); applyFilters(); });
 fYear.addEventListener('change', applyFilters);
 fH2hYear.addEventListener('change', applyFilters);
+fH2hComp.addEventListener('change', applyFilters);
 fStatus.addEventListener('change', applyFilters);
 
 function matchesJerseyFilter(m){
@@ -943,12 +955,12 @@ function selectMatch(i){
 }
 
 function applyFilters(){
-  const comp = compEl.value;
   let rows;
 
   if(mode === 'h2h'){
     const a = fTeamA.value, b = fTeamB.value;
     const year = fH2hYear.value;
+    const comp = fH2hComp.value;
     rows = MATCHES.filter(m => {
       const isPairing = (m.home === a && m.away === b) || (m.home === b && m.away === a);
       const matchesComp = !comp || m.comp === comp;
@@ -957,6 +969,7 @@ function applyFilters(){
     });
   } else {
     const year = fYear.value;
+    const comp = compEl.value;
     rows = MATCHES.filter(m => {
       const matchesQ = !fTeam.value || m.home === fTeam.value || m.away === fTeam.value;
       const matchesComp = !comp || m.comp === comp;
@@ -986,6 +999,7 @@ clearBtn.addEventListener('click', () => {
   fTeam.value = '';
   fYear.value = '';
   fH2hYear.value = '';
+  fH2hComp.value = '';
   selectedJerseys.clear();
   compEl.value = '';
   refreshJerseyFilterOptions();
