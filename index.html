@@ -391,6 +391,7 @@
   }
   .row .c-home{text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;}
   .row .c-away{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;}
+  .row .is-selected-team{font-weight:800;}
   .result-win{color:var(--win);}
   .result-loss{color:var(--loss);}
   .result-draw{color:var(--draw);}
@@ -1056,6 +1057,11 @@ function renderList(){
     listEl.innerHTML = `<div class="no-results">No matches found. Try a different team or competition.</div>`;
     return;
   }
+  // Bolds whichever side matches the currently selected Team filter, so
+  // the team you picked stays easy to pick out of the list whether it
+  // won, lost, or drew - the result colour alone doesn't tell you which
+  // row is "yours".
+  const selectedTeam = mode === 'browse' ? fTeam.value : null;
   listEl.innerHTML = filtered.map((m, i) => {
     const played = m.homeScore !== null && m.homeScore !== undefined && m.awayScore !== null && m.awayScore !== undefined;
     const hr = played ? resultFor(m,'home') : null;
@@ -1063,15 +1069,17 @@ function renderList(){
     const hs = played ? m.homeScore : '';
     const as = played ? m.awayScore : '';
     const penNote = wentToPens(m) ? `<span class="row-note">(${m.homePens}&ndash;${m.awayPens} on penalties)</span>` : '';
+    const homeSelected = selectedTeam && m.home === selectedTeam;
+    const awaySelected = selectedTeam && m.away === selectedTeam;
     return `
       <div class="row ${i===activeIndex?'active':''}" data-i="${i}" tabindex="0">
         <span class="c-date">${fmtDate(m.date, true)}</span>
         <span class="jcode" title="${jerseyLabel(m.homeJersey)} jersey"><span class="jname-full">${jerseyCode(m.homeJersey)}</span><span class="jname-short">${jerseyAbbrev(m.homeJersey)}</span></span>
-        <span class="c-home ${resultClass(hr)}">${m.home}</span>
+        <span class="c-home ${resultClass(hr)}${homeSelected ? ' is-selected-team' : ''}">${m.home}</span>
         <span class="c-hs">${hs}</span>
         <span class="c-dash">&ndash;</span>
         <span class="c-as">${as}</span>
-        <span class="c-away ${resultClass(ar)}">${m.away}</span>
+        <span class="c-away ${resultClass(ar)}${awaySelected ? ' is-selected-team' : ''}">${m.away}</span>
         <span class="jcode" title="${jerseyLabel(m.awayJersey)} jersey"><span class="jname-full">${jerseyCode(m.awayJersey)}</span><span class="jname-short">${jerseyAbbrev(m.awayJersey)}</span></span>
         <span class="c-comp" title="${m.comp || ''}${m.stage ? ' \u2014 ' + m.stage : ''}">${compCode(m.comp)}</span>
         <span class="c-photos"><span class="photo-dot ${m.homeImg?'filled':''}"></span><span class="photo-dot ${m.awayImg?'filled':''}"></span></span>
