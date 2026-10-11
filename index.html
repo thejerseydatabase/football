@@ -648,8 +648,23 @@ async function loadLiveData(){
     setDefaultStatus();
     applyFilters();
 
-    const now = new Date().toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
-    statusEl.innerHTML = `<span style="color:var(--win)">&#9679;</span> Live data &mdash; updated ${now}`;
+    // Google exposes Last-Modified on a published sheet's CSV export - one
+    // of the response headers a cross-origin fetch() can read without any
+    // server-side CORS config, per the Fetch spec's response header
+    // safelist - reflecting when the SHEET was actually last edited, not
+    // when this page happened to load. Showing that instead of "just now"
+    // means a visitor can tell whether recent games are missing, rather
+    // than assuming "Live data" means fully current. Falls back to the
+    // old wording if the header isn't present for some reason.
+    const lastModified = res.headers.get('Last-Modified');
+    const lastModDate = lastModified ? new Date(lastModified) : null;
+    if(lastModDate && !isNaN(lastModDate)){
+      const formatted = lastModDate.toLocaleDateString('en-AU', {day:'numeric', month:'short', year:'numeric'});
+      statusEl.innerHTML = `<span style="color:var(--win)">&#9679;</span> Last updated ${formatted}`;
+    } else {
+      const now = new Date().toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
+      statusEl.innerHTML = `<span style="color:var(--win)">&#9679;</span> Live data &mdash; updated ${now}`;
+    }
   } catch(err){
     statusEl.innerHTML = `<span style="color:var(--text-dim2)">&#9679;</span> Showing saved snapshot (live data unavailable right now)`;
     console.warn('Live data fetch failed, using snapshot:', err);
