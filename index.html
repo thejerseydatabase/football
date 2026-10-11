@@ -451,7 +451,7 @@
     <div class="hero-circle"></div>
     <p class="eyebrow">International Jersey Tracker</p>
     <h1>Every jersey.<br>Every scoreline.</h1>
-    <p class="stat-line"><b id="total-count">0</b> fixtures &middot; <b id="played-count">0</b> played &middot; <b id="kit-count">0</b> with a jersey photo &middot; <b id="tracked-pct">0</b>% tracked</p>
+    <p class="stat-line"><b id="total-count">0</b> fixtures &middot; <b id="played-count">0</b> played &middot; <b id="tracked-count">0</b> tracked (<b id="tracked-pct">0</b>%) &middot; <b id="kit-count">0</b> with a photo (<b id="photo-pct">0</b>%)</p>
     <p class="stat-line" id="data-status" style="margin-top:6px;">Loading data&hellip;</p>
   </header>
 
@@ -596,6 +596,16 @@ function parseSheetDate(s){
   const dd = String(d.getDate()).padStart(2,'0');
   return `${d.getFullYear()}-${mm}-${dd}`;
 }
+// Formats a YYYY-MM-DD string (parseSheetDate's own output) without ever
+// going through `new Date(ymdString)` - that parses a bare date as UTC
+// midnight, which toLocaleDateString() can then roll back a day for
+// anyone west of UTC. Working off the YYYY-MM-DD parts directly avoids
+// that entirely.
+function formatYMD(ymd){
+  const [y, m, d] = ymd.split('-').map(Number);
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${d} ${months[m-1]} ${y}`;
+}
 
 function csvRowsToMatches(rows){
   const [header, ...data] = rows;
@@ -648,29 +658,58 @@ async function loadLiveData(){
       comps.map(c => `<option value="${c}">${c} (${compCode(c)})</option>`).join('');
     compEl.value = prevValue;
 
-    document.getElementById('total-count').textContent = MATCHES.length;
-    // A fixture only counts as "played" once it has a final score - an
-    // unplayed future fixture (blank score in the sheet) shouldn't make the
-    // season look under-logged before it's even happened, and "% tracked"
-    // is only meaningful against games that have actually been played.
-    const playedMatches = MATCHES.filter(m => m.homeScore != null && m.awayScore != null);
-    document.getElementById('played-count').textContent = playedMatches.length;
-    document.getElementById('kit-count').textContent = MATCHES.filter(m => m.homeImg || m.awayImg).length;
-    document.getElementById('tracked-pct').textContent = playedMatches.length ? Math.round(playedMatches.filter(m => m.homeImg || m.awayImg).length / playedMatches.length * 100) : 0;
+    
+// Two separate ideas that "% tracked" used to conflate into one number:
+// whether a fixture has actually happened yet (by date, independent of
+// whether its result has been entered), and whether its result has been
+// entered (isPlayed - already used elsewhere for the Results/Fixtures
+// split). A many-year history where every past result is already logged
+// but photos are still being added should read as "100% tracked, 4%
+// with a photo" - not one blended "4% tracked" that looks like the
+// results themselves are barely logged.
+function computeStats(rows){
+  const todayStr = new Date().toISOString().slice(0,10);
+  const total = rows.length;
+  const occurred = rows.filter(m => m.date && m.date <= todayStr).length;
+  const tracked = rows.filter(isPlayed).length;
+  const trackedPct = occurred ? Math.round(tracked / occurred * 100) : 0;
+  const withPhoto = rows.filter(m => isPlayed(m) && (m.homeImg || m.awayImg)).length;
+  const photoPct = tracked ? Math.round(withPhoto / tracked * 100) : 0;
+  return {total, occurred, tracked, trackedPct, withPhoto, photoPct};
+}
+function renderStats(rows){
+  const s = computeStats(rows);
+  document.getElementById('total-count').textContent = s.total;
+  document.getElementById('played-count').textContent = s.occurred;
+  document.getElementById('tracked-count').textContent = s.tracked;
+  document.getElementById('tracked-pct').textContent = s.trackedPct;
+  document.getElementById('kit-count').textContent = s.withPhoto;
+  document.getElementById('photo-pct').textContent = s.photoPct;
+}
+renderStats(MATCHES);
     setDefaultYear();
     setDefaultStatus();
     applyFilters();
 
-    // Tries Google's Last-Modified header first, but in practice it isn't
-    // coming through reliably from a published sheet's CSV export - so
-    // LAST_UPDATED (set above, next to CSV_URL) is the real source of
-    // truth here, not a last-resort fallback. Update it by hand (or ask
-    // Claude to) whenever this sheet's data actually changes.
+    // Three ways to know when the data last changed, in priority order:
+    // 1) Google's Last-Modified header - in practice this isn't coming
+    //    through reliably from a published sheet's CSV export, but it's
+    //    free to try. 2) A self-service cell in the sheet itself - the
+    //    SAME header row as "Match ID"/"Comp"/etc, one column past your
+    //    last mapped column - type today's date there whenever you finish
+    //    updating this sheet and the site picks it up automatically, no
+    //    need to touch any code. csvRowsToMatches() already stripped any
+    //    blank leading row(s) from `rows` by this point (it shifts the
+    //    array in place), so rows[0] here is reliably the header row.
+    // 3) LAST_UPDATED below, only if neither of the above is available.
     const lastModified = res.headers.get('Last-Modified');
     const lastModDate = lastModified ? new Date(lastModified) : null;
+    const sheetLastUpdated = rows[0] ? parseSheetDate(rows[0][16]) : null;
     const formatted = (lastModDate && !isNaN(lastModDate))
       ? lastModDate.toLocaleDateString('en-AU', {day:'numeric', month:'short', year:'numeric'})
-      : LAST_UPDATED;
+      : sheetLastUpdated
+        ? formatYMD(sheetLastUpdated)
+        : LAST_UPDATED;
     statusEl.innerHTML = `<span style="color:var(--win)">&#9679;</span> Last updated ${formatted}`;
   } catch(err){
     statusEl.innerHTML = `<span style="color:var(--text-dim2)">&#9679;</span> Showing saved snapshot (live data unavailable right now)`;
@@ -1159,6 +1198,11 @@ function applyFilters(){
     });
   }
 
+  // Reflects whatever filters are active right now, same stats shown
+  // after a full load but scoped to this subset - e.g. picking a single
+  // year shows that year's own tracked/photo numbers.
+  renderStats(rows);
+
   // Results stay newest-first (rows is already sorted that way from MATCHES); fixtures need
   // reversing to soonest-first; "all" shows results then fixtures as two distinct blocks.
   const resultsBlock = rows.filter(isPlayed);
@@ -1325,15 +1369,7 @@ function renderJerseyStats(){
 const comps = [...new Set(MATCHES.map(m => m.comp).filter(Boolean))].sort();
 compEl.innerHTML += comps.map(c => `<option value="${c}">${c} (${compCode(c)})</option>`).join('');
 
-document.getElementById('total-count').textContent = MATCHES.length;
-// A fixture only counts as "played" once it has a final score - an
-// unplayed future fixture (blank score in the sheet) shouldn't make the
-// season look under-logged before it's even happened, and "% tracked"
-// is only meaningful against games that have actually been played.
-const playedMatches = MATCHES.filter(m => m.homeScore != null && m.awayScore != null);
-document.getElementById('played-count').textContent = playedMatches.length;
-document.getElementById('kit-count').textContent = MATCHES.filter(m => m.homeImg || m.awayImg).length;
-document.getElementById('tracked-pct').textContent = playedMatches.length ? Math.round(playedMatches.filter(m => m.homeImg || m.awayImg).length / playedMatches.length * 100) : 0;
+renderStats(MATCHES);
 
 refreshTeamList();
 setDefaultYear();
