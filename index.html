@@ -111,6 +111,7 @@
     margin:0;
   }
   .stat-line b{color:var(--text);font-weight:600;}
+  .stat-label{color:var(--text-dim2);font-size:11px;text-transform:uppercase;letter-spacing:.07em;margin-right:3px;}
 
   /* ---------- Controls ---------- */
   .mode-toggle{display:flex;gap:8px;margin-bottom:16px;}
@@ -295,7 +296,7 @@
     background:#0D1F16;
     border:1px solid var(--line);
     border-radius:8px;
-    width:44px;height:56px;
+    min-width:44px;height:56px;padding:0 8px;box-sizing:border-box;
     display:flex;align-items:center;justify-content:center;
     font-family:'IBM Plex Mono',monospace;
     font-weight:600;
@@ -451,7 +452,8 @@
     <div class="hero-circle"></div>
     <p class="eyebrow">International Jersey Tracker</p>
     <h1>Every jersey.<br>Every scoreline.</h1>
-    <p class="stat-line"><b id="total-count">0</b> fixtures &middot; <b id="played-count">0</b> played &middot; <b id="tracked-count">0</b> results logged (<b id="tracked-pct">0</b>%) &middot; <b id="kit-count">0</b> with a photo (<b id="photo-pct">0</b>%)</p>
+    <p class="stat-line" id="alltime-stat-line" hidden><span class="stat-label">All-time</span> <b id="total-count-all">0</b> fixtures &middot; <b id="played-count-all">0</b> played &middot; <b id="tracked-count-all">0</b> results logged (<b id="tracked-pct-all">0</b>%) &middot; <b id="kit-count-all">0</b> with a photo (<b id="photo-pct-all">0</b>%)</p>
+    <p class="stat-line" style="margin-top:4px;"><span class="stat-label" id="stat-label-current" hidden>Currently showing</span> <b id="total-count">0</b> fixtures &middot; <b id="played-count">0</b> played &middot; <b id="tracked-count">0</b> results logged (<b id="tracked-pct">0</b>%) &middot; <b id="kit-count">0</b> with a photo (<b id="photo-pct">0</b>%)</p>
     <p class="stat-line" id="data-status" style="margin-top:6px;">Loading data&hellip;</p>
   </header>
 
@@ -667,6 +669,26 @@ function renderStats(rows){
   document.getElementById('photo-pct').textContent = s.photoPct;
 }
 
+// Only shown once a tracker has more than one distinct year of data - until
+// then "all-time" and "currently showing" are the same thing, so a second
+// line would just be a redundant duplicate of the first.
+function renderAllTimeLine(){
+  const s = computeStats(MATCHES);
+  document.getElementById('total-count-all').textContent = s.total;
+  document.getElementById('played-count-all').textContent = s.occurred;
+  document.getElementById('tracked-count-all').textContent = s.tracked;
+  document.getElementById('tracked-pct-all').textContent = s.trackedPct;
+  document.getElementById('kit-count-all').textContent = s.withPhoto;
+  document.getElementById('photo-pct-all').textContent = s.photoPct;
+  const years = [...new Set(MATCHES.map(m => m.year).filter(Boolean))];
+  const multiYear = years.length > 1;
+  const rangeEl = document.getElementById('year-range-all');
+  if(rangeEl && years.length) rangeEl.textContent = Math.min(...years) + '\u2013' + Math.max(...years);
+  document.getElementById('alltime-stat-line').hidden = !multiYear;
+  const labelEl = document.getElementById('stat-label-current');
+  if(labelEl) labelEl.hidden = !multiYear;
+}
+
 async function loadLiveData(){
   const statusEl = document.getElementById('data-status');
   try{
@@ -687,7 +709,7 @@ async function loadLiveData(){
       comps.map(c => `<option value="${c}">${c} (${compCode(c)})</option>`).join('');
     compEl.value = prevValue;
 
-    renderStats(MATCHES);
+    renderAllTimeLine();
     setDefaultYear();
     setDefaultStatus();
     applyFilters();
@@ -1370,7 +1392,7 @@ function renderJerseyStats(){
 const comps = [...new Set(MATCHES.map(m => m.comp).filter(Boolean))].sort();
 compEl.innerHTML += comps.map(c => `<option value="${c}">${c} (${compCode(c)})</option>`).join('');
 
-renderStats(MATCHES);
+renderAllTimeLine();
 
 refreshTeamList();
 setDefaultYear();
