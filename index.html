@@ -638,27 +638,7 @@ function csvRowsToMatches(rows){
     .sort((a,b) => (b.date||'').localeCompare(a.date||''));
 }
 
-async function loadLiveData(){
-  const statusEl = document.getElementById('data-status');
-  try{
-    const res = await fetch(CSV_URL, {cache:'no-store'});
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    const text = await res.text();
-    const rows = parseCSV(text);
-    const live = csvRowsToMatches(rows);
-    if(live.length === 0) throw new Error('No rows parsed');
 
-    MATCHES = live;
-    refreshTeamList();
-
-    // repopulate the competition dropdown in case new competitions were added
-    const prevValue = compEl.value;
-    const comps = [...new Set(MATCHES.map(m => m.comp).filter(Boolean))].sort();
-    compEl.innerHTML = '<option value="">All competitions</option>' +
-      comps.map(c => `<option value="${c}">${c} (${compCode(c)})</option>`).join('');
-    compEl.value = prevValue;
-
-    
 // Two separate ideas that "% tracked" used to conflate into one number:
 // whether a fixture has actually happened yet (by date, independent of
 // whether its result has been entered), and whether its result has been
@@ -686,7 +666,28 @@ function renderStats(rows){
   document.getElementById('kit-count').textContent = s.withPhoto;
   document.getElementById('photo-pct').textContent = s.photoPct;
 }
-renderStats(MATCHES);
+
+async function loadLiveData(){
+  const statusEl = document.getElementById('data-status');
+  try{
+    const res = await fetch(CSV_URL, {cache:'no-store'});
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    const rows = parseCSV(text);
+    const live = csvRowsToMatches(rows);
+    if(live.length === 0) throw new Error('No rows parsed');
+
+    MATCHES = live;
+    refreshTeamList();
+
+    // repopulate the competition dropdown in case new competitions were added
+    const prevValue = compEl.value;
+    const comps = [...new Set(MATCHES.map(m => m.comp).filter(Boolean))].sort();
+    compEl.innerHTML = '<option value="">All competitions</option>' +
+      comps.map(c => `<option value="${c}">${c} (${compCode(c)})</option>`).join('');
+    compEl.value = prevValue;
+
+    renderStats(MATCHES);
     setDefaultYear();
     setDefaultStatus();
     applyFilters();
