@@ -112,6 +112,8 @@
   }
   .stat-line b{color:var(--text);font-weight:600;}
   .stat-label{color:var(--text-dim2);font-size:11px;text-transform:uppercase;letter-spacing:.07em;margin-right:3px;}
+  .stat-label-current{color:var(--accent);font-weight:700;}
+  .stat-line-current{margin-top:6px !important;padding-top:6px;border-top:1px solid var(--line);}
 
   /* ---------- Controls ---------- */
   .mode-toggle{display:flex;gap:8px;margin-bottom:16px;}
@@ -453,7 +455,7 @@
     <p class="eyebrow">International Jersey Tracker</p>
     <h1>Every jersey.<br>Every scoreline.</h1>
     <p class="stat-line" id="alltime-stat-line" hidden><span class="stat-label">All-time</span> <b id="total-count-all">0</b> fixtures &middot; <b id="played-count-all">0</b> played &middot; <b id="tracked-count-all">0</b> results logged (<b id="tracked-pct-all">0</b>%) &middot; <b id="kit-count-all">0</b> with a photo (<b id="photo-pct-all">0</b>%)</p>
-    <p class="stat-line" style="margin-top:4px;"><span class="stat-label" id="stat-label-current" hidden>Currently showing</span> <b id="total-count">0</b> fixtures &middot; <b id="played-count">0</b> played &middot; <b id="tracked-count">0</b> results logged (<b id="tracked-pct">0</b>%) &middot; <b id="kit-count">0</b> with a photo (<b id="photo-pct">0</b>%)</p>
+    <p class="stat-line stat-line-current"><span class="stat-label stat-label-current" id="stat-label-current" hidden>Currently showing</span> <b id="total-count">0</b> fixtures &middot; <b id="played-count">0</b> played &middot; <b id="tracked-count">0</b> results logged (<b id="tracked-pct">0</b>%) &middot; <b id="kit-count">0</b> with a photo (<b id="photo-pct">0</b>%)</p>
     <p class="stat-line" id="data-status" style="margin-top:6px;">Loading data&hellip;</p>
   </header>
 
