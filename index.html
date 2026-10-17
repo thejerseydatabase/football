@@ -652,7 +652,13 @@ function csvRowsToMatches(rows){
 // with a photo" - not one blended "4% tracked" that looks like the
 // results themselves are barely logged.
 function computeStats(rows){
-  const todayStr = new Date().toISOString().slice(0,10);
+  // Built from local date parts, not toISOString() (always UTC) - a match
+  // played and logged on today's local date could still read as
+  // "tomorrow" in UTC for anyone east of it for part of the day (e.g.
+  // Australia), wrongly excluding it from occurred while still counting
+  // it in tracked and pushing trackedPct over 100%.
+  const now = new Date();
+  const todayStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
   const total = rows.length;
   const occurred = rows.filter(m => m.date && m.date <= todayStr).length;
   const tracked = rows.filter(isPlayed).length;
