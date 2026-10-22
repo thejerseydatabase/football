@@ -150,6 +150,15 @@
   }
   .multi-select-clear{background:none;border:none;color:var(--text-dim);font-family:'Inter',sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:.04em;text-decoration:underline;cursor:pointer;padding:0;flex-shrink:0;}
   .multi-select-clear:hover{color:var(--accent);}
+  .combo-input{padding-right:30px;}
+  .combo-clear{
+    position:absolute;right:5px;top:50%;transform:translateY(-50%);
+    width:24px;height:24px;border:none;background:none;color:var(--text-dim2);
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    font-size:18px;line-height:1;border-radius:6px;padding:0;
+  }
+  .combo-clear:hover{color:var(--accent);background:var(--surface-2);}
+  .combo-clear[hidden]{display:none;}
 
   .controls{
     display:flex;
@@ -792,6 +801,19 @@ function makeComboBox(wrapId, inputId, panelId){
   const wrap = document.getElementById(wrapId);
   const input = document.getElementById(inputId);
   const panel = document.getElementById(panelId);
+  const comboClearBtn = document.createElement('button');
+  comboClearBtn.type = 'button';
+  comboClearBtn.className = 'combo-clear';
+  comboClearBtn.setAttribute('aria-label', 'Clear');
+  comboClearBtn.innerHTML = '&times;';
+  comboClearBtn.hidden = true;
+  wrap.appendChild(comboClearBtn);
+  comboClearBtn.addEventListener('mousedown', e => {
+    e.preventDefault(); // keeps the input focused, same reason the panel options use mousedown
+    choose('');
+    input.focus();
+    openPanel();
+  });
   const target = new EventTarget();
   let options = [];
   let value = '';
@@ -826,6 +848,7 @@ function makeComboBox(wrapId, inputId, panelId){
   function choose(v){
     value = options.some(o => o.value === v) ? v : '';
     input.value = labelFor(value);
+    comboClearBtn.hidden = !value;
     closePanel();
     target.dispatchEvent(new Event('change'));
   }
@@ -861,6 +884,7 @@ function makeComboBox(wrapId, inputId, panelId){
     set(v){
       value = options.some(o => o.value === v) ? v : '';
       input.value = labelFor(value);
+      comboClearBtn.hidden = !value;
     }
   });
   // values: plain array of strings, same shape the old innerHTML population
@@ -874,6 +898,7 @@ function makeComboBox(wrapId, inputId, panelId){
     input.placeholder = placeholder;
     if(!options.some(o => o.value === value)) value = allowEmpty ? '' : (options[0] ? options[0].value : '');
     input.value = labelFor(value);
+    comboClearBtn.hidden = !value;
   };
   return target;
 }
