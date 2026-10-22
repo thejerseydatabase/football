@@ -5,35 +5,35 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="A fan-made tracker of jerseys worn in international football matches. Browse match results and kits by team and competition. No products are sold here.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23E8B84B' stroke-width='2'%3E%3Cpath d='M4 5l4-2 4 2 4-2 4 2v3l-3 1v11H7V9L4 8z'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23F4BA34' stroke-width='2'%3E%3Cpath d='M4 5l4-2 4 2 4-2 4 2v3l-3 1v11H7V9L4 8z'/%3E%3C/svg%3E">
 <title>International Jersey Tracker</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/3.46.0/tabler-icons.min.css">
 <style>
   :root{
-    --bg:#0B1F17;
-    --surface:#12271D;
-    --surface-2:#1B3A2A;
-    --line:#264536;
-    --text:#F2F6EF;
-    --text-dim:#8FAA98;
-    --text-dim2:#90B39F;
-    --accent:#E8B84B;
+    --bg:#0C0E0C;
+    --surface:#151815;
+    --surface-2:#242621;
+    --line:#61675B;
+    --text:#F7F8F5;
+    --text-dim:#A6ACA2;
+    --text-dim2:#7D8278;
+    --accent:#F4BA34;
     --win:#5FB88A;
     --loss:#D9705C;
     --draw:#E8C15A;
   }
 
   :root[data-theme="light"]{
-    --bg:#F4F1E9;
+    --bg:#FAF8F2;
     --surface:#FFFFFF;
-    --surface-2:#ECE6D8;
-    --line:#D9D0BC;
-    --text:#1C2B21;
-    --text-dim:#5C6F60;
-    --text-dim2:#526355;
-    --accent:#A67C00;
+    --surface-2:#EFEADC;
+    --line:#858B7F;
+    --text:#1C1C16;
+    --text-dim:#5B5A4E;
+    --text-dim2:#7D7A6C;
+    --accent:#8C6407;
     --win:#2F8F57;
     --loss:#C1503D;
     --draw:#B8860B;
@@ -60,7 +60,7 @@
   }
   .back-to-hub{
     position:absolute;top:16px;left:20px;
-    font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.05em;
+    font-family:'Inter',sans-serif;font-size:11px;letter-spacing:.05em;
     color:var(--text-dim);text-decoration:none;z-index:5;
   }
   .back-to-hub:hover{color:var(--accent);}
@@ -68,7 +68,7 @@
     position:absolute;
     top:50%;left:50%;
     width:520px;height:520px;
-    border:1px solid rgba(242,246,239,0.06);
+    border:1px solid rgba(247,248,245,0.06);
     border-radius:50%;
     transform:translate(-50%,-50%);
     pointer-events:none;
@@ -78,7 +78,7 @@
     top:-180px;left:50%;
     width:640px;height:400px;
     transform:translateX(-50%);
-    background:radial-gradient(ellipse at center, rgba(232,184,75,0.16), transparent 70%);
+    background:radial-gradient(ellipse at center, rgba(244,186,52,0.16), transparent 70%);
     pointer-events:none;
     animation:glow 6s ease-in-out infinite;
   }
@@ -86,7 +86,7 @@
   @keyframes glow{ 0%,100%{opacity:.7} 50%{opacity:1} }
   .eyebrow{
     position:relative;
-    font-family:'IBM Plex Mono',monospace;
+    font-family:'Inter',sans-serif;
     font-size:12px;
     letter-spacing:.18em;
     color:var(--accent);
@@ -105,7 +105,7 @@
   }
   .stat-line{
     position:relative;
-    font-family:'IBM Plex Mono',monospace;
+    font-family:'Inter',sans-serif;
     font-size:13px;
     color:var(--text-dim);
     margin:0;
@@ -121,7 +121,7 @@
   .mode-toggle button.active{border-color:var(--accent);color:var(--accent);background:var(--surface-2);}
   .h2h-row{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;margin-bottom:16px;}
   .h2h-row select, #f-h2h-year, #f-h2h-comp, .combo-input{background:var(--surface);border:1px solid var(--line);color:var(--text);font-family:'Inter',sans-serif;font-size:13.5px;padding:10px 12px;border-radius:8px;outline:none;width:100%;}
-  .h2h-row select:focus, #f-h2h-year:focus, #f-h2h-comp:focus, .combo-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(232,184,75,0.15);}
+  .h2h-row select:focus, #f-h2h-year:focus, #f-h2h-comp:focus, .combo-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(244,186,52,0.15);}
   .vs-sep{font-family:'Anton',sans-serif;color:var(--text-dim);font-size:16px;text-align:center;}
   /* Jersey filter: a checkbox dropdown instead of a plain select, so
      seeing every match where a team wore any of several jersey types
@@ -132,7 +132,7 @@
     font-family:'Inter',sans-serif;font-size:13.5px;padding:10px 12px;border-radius:8px;outline:none;width:100%;
     text-align:left;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   }
-  .multi-select-btn:focus, .multi-select-btn[aria-expanded="true"]{border-color:var(--accent);box-shadow:0 0 0 3px rgba(232,184,75,0.15);}
+  .multi-select-btn:focus, .multi-select-btn[aria-expanded="true"]{border-color:var(--accent);box-shadow:0 0 0 3px rgba(244,186,52,0.15);}
   .multi-select-panel{
     position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:20;max-height:260px;overflow-y:auto;
     background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px;
@@ -145,10 +145,10 @@
   .multi-select-header{
     display:flex;align-items:center;justify-content:space-between;gap:8px;
     padding:4px 8px 8px;margin-bottom:4px;border-bottom:1px solid var(--line);
-    font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.04em;
+    font-family:'Inter',sans-serif;font-size:10px;letter-spacing:.04em;
     color:var(--text-dim2);text-transform:uppercase;
   }
-  .multi-select-clear{background:none;border:none;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.04em;text-decoration:underline;cursor:pointer;padding:0;flex-shrink:0;}
+  .multi-select-clear{background:none;border:none;color:var(--text-dim);font-family:'Inter',sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:.04em;text-decoration:underline;cursor:pointer;padding:0;flex-shrink:0;}
   .multi-select-clear:hover{color:var(--accent);}
 
   .controls{
@@ -171,12 +171,12 @@
   .controls input::placeholder{color:var(--text-dim2);}
   .controls input:focus, .controls select:focus{
     border-color:var(--accent);
-    box-shadow:0 0 0 3px rgba(232,184,75,0.15);
+    box-shadow:0 0 0 3px rgba(244,186,52,0.15);
   }
   .controls select{cursor:pointer;flex:1;min-width:150px;}
 
   .clear-row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:-14px 0 24px;}
-  .clear-row button{background:none;border:none;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;font-size:11.5px;text-decoration:underline;cursor:pointer;padding:4px;}
+  .clear-row button{background:none;border:none;color:var(--text-dim);font-family:'Inter',sans-serif;font-size:11.5px;text-decoration:underline;cursor:pointer;padding:4px;}
   .clear-row button:hover{color:var(--accent);}
 
   .search-wrap{position:relative;flex:1;min-width:180px;}
@@ -197,7 +197,7 @@
     padding:9px 14px;font-size:13.5px;cursor:pointer;
     display:flex;justify-content:space-between;gap:8px;
   }
-  .suggestion .sc{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-dim2);}
+  .suggestion .sc{font-family:'Inter',sans-serif;font-size:11px;color:var(--text-dim2);}
   .suggestion:hover, .suggestion.highlighted{background:var(--surface);}
 
   /* ---------- Jersey stats table (shown when one team is selected) ---------- */
@@ -220,14 +220,14 @@
   .stats-body{margin-top:14px;}
   .jersey-stats table{width:100%;border-collapse:collapse;font-size:13px;}
   .jersey-stats th{
-    font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.05em;
+    font-family:'Inter',sans-serif;font-size:10.5px;letter-spacing:.05em;
     color:var(--text-dim2);text-transform:uppercase;text-align:center;
     padding:6px 4px;border-bottom:1px solid var(--line);
   }
   .jersey-stats th:first-child{text-align:left;}
   .jersey-stats td{
     text-align:center;padding:8px 4px;border-bottom:1px solid var(--line);
-    font-family:'IBM Plex Mono',monospace;
+    font-family:'Inter',sans-serif;font-variant-numeric:tabular-nums;
   }
   .jersey-stats td:first-child{
     text-align:left;font-family:'Inter',sans-serif;font-weight:600;
@@ -236,6 +236,9 @@
   .jersey-stats tr.total-row td{color:var(--text);font-weight:600;background:var(--surface-2);}
   .jersey-stats td.gd-pos{color:var(--win);}
   .jersey-stats td.gd-neg{color:var(--loss);}
+  .jersey-stats tbody tr:nth-child(even):not(.total-row){background:var(--surface-2);}
+  #ladder-tbody tr:first-child td{font-weight:700;}
+  #ladder-tbody tr:first-child td:first-child{border-left:3px solid var(--accent);padding-left:9px;}
 
   /* ---------- Matchup viewer (detail card) ---------- */
   .matchup{
@@ -267,7 +270,7 @@
   .jersey-photo .ti{font-size:36px;color:var(--text-dim2);}
   .jersey-photo.empty{border-style:dashed;}
   .no-photo-label{
-    font-family:'IBM Plex Mono',monospace;
+    font-family:'Inter',sans-serif;
     font-size:10px;
     letter-spacing:.05em;
     color:var(--text-dim2);
@@ -285,7 +288,7 @@
     overflow-wrap:break-word;
   }
   .jersey-tag{
-    font-family:'IBM Plex Mono',monospace;
+    font-family:'Inter',sans-serif;
     font-size:11px;
     color:var(--text-dim);
     text-transform:uppercase;
@@ -295,13 +298,13 @@
   .score-block{text-align:center;padding:0 6px;}
   .score-tiles{display:flex;align-items:center;gap:8px;justify-content:center;}
   .tile{
-    background:#0D1F16;
+    background:var(--bg);
     border:1px solid var(--line);
     border-radius:8px;
     min-width:44px;height:56px;padding:0 8px;box-sizing:border-box;
     display:flex;align-items:center;justify-content:center;
-    font-family:'IBM Plex Mono',monospace;
-    font-weight:600;
+    font-family:'Inter',sans-serif;
+    font-weight:700;font-variant-numeric:tabular-nums;
     font-size:26px;
     color:var(--accent);
     box-shadow:inset 0 2px 4px rgba(0,0,0,0.4);
@@ -309,14 +312,14 @@
   .tile.win{color:var(--win);border-color:rgba(95,184,138,0.4);}
   .tile.loss{color:var(--loss);border-color:rgba(217,112,92,0.4);}
   .tile.draw{color:var(--draw);border-color:rgba(232,194,90,0.4);}
-  .tile-sep{color:var(--text-dim2);font-family:'IBM Plex Mono',monospace;font-size:20px;}
+  .tile-sep{color:var(--text-dim2);font-family:'Inter',sans-serif;font-size:20px;}
   .vs-label{
     font-family:'Anton',sans-serif;
     font-size:26px;
     color:var(--text-dim);
   }
   .ft-label{
-    font-family:'IBM Plex Mono',monospace;
+    font-family:'Inter',sans-serif;
     font-size:12px;
     letter-spacing:.08em;
     color:var(--text-dim2);
@@ -324,7 +327,7 @@
     margin:10px 0 0;
   }
   .meta-ticker{
-    font-family:'IBM Plex Mono',monospace;
+    font-family:'Inter',sans-serif;
     font-size:13px;
     color:var(--text-dim);
     text-align:center;
@@ -338,7 +341,7 @@
   .matchup-nav-btn{background:var(--surface-2);border:1px solid var(--line);color:var(--text);width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;padding:0;}
   .matchup-nav-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent);}
   .matchup-nav-btn:disabled{opacity:.35;cursor:default;}
-  .matchup-nav-pos{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--text-dim2);letter-spacing:.04em;}
+  .matchup-nav-pos{font-family:'Inter',sans-serif;font-size:11.5px;color:var(--text-dim2);letter-spacing:.04em;}
   .team-name-link{background:none;border:none;font:inherit;color:inherit;cursor:pointer;display:block;width:100%;text-align:center;}
   .team-name-link:hover{color:var(--accent);text-decoration:underline;}
 
@@ -352,7 +355,7 @@
   }
   .list-head{
     padding:10px 14px;
-    font-family:'IBM Plex Mono',monospace;
+    font-family:'Inter',sans-serif;
     font-size:10px;
     letter-spacing:.05em;
     color:var(--text-dim2);
@@ -372,9 +375,9 @@
   .row:last-child{border-bottom:none;}
   .row:hover{background:var(--surface-2);}
   .row.active{background:var(--surface-2);box-shadow:inset 3px 0 0 var(--accent);}
-  .row .c-date{font-family:'IBM Plex Mono',monospace;color:var(--text-dim);font-size:11.5px;white-space:nowrap;}
+  .row .c-date{font-family:'Inter',sans-serif;color:var(--text-dim);font-size:11.5px;white-space:nowrap;}
   .jcode{
-    font-family:'IBM Plex Mono',monospace;
+    font-family:'Inter',sans-serif;
     font-size:10.5px;
     font-weight:600;
     color:var(--text-dim);
@@ -399,14 +402,14 @@
   .result-loss{color:var(--loss);}
   .result-draw{color:var(--draw);}
   .row .c-hs, .row .c-as{
-    font-family:'IBM Plex Mono',monospace;
+    font-family:'Inter',sans-serif;
     font-size:13px;
     text-align:center;
     color:var(--text);
   }
   .c-dash{color:var(--text-dim2);text-align:center;font-size:11px;}
   .row .c-comp{
-    font-family:'IBM Plex Mono',monospace;
+    font-family:'Inter',sans-serif;
     font-size:10.5px;
     color:var(--text-dim);
     text-align:center;
@@ -416,7 +419,7 @@
   .c-photos{display:flex;gap:3px;justify-content:center;}
   .photo-dot{width:7px;height:7px;border-radius:50%;background:var(--loss);}
   .photo-dot.filled{background:var(--win);}
-  .row-note{grid-column:1/-1;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.03em;color:var(--text-dim2);padding-top:4px;}
+  .row-note{grid-column:1/-1;text-align:center;font-family:'Inter',sans-serif;font-size:11.5px;letter-spacing:.03em;color:var(--text-dim2);padding-top:4px;}
   .no-results{padding:32px 16px;text-align:center;color:var(--text-dim);font-size:13.5px;}
   .list-scroll{max-height:640px;overflow-y:auto;}
 
@@ -476,7 +479,7 @@
         <div class="multi-select-panel" id="f-teamB-panel" hidden></div>
       </div>
     </div>
-    <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;">
+    <div style="display:flex;gap:10px;margin:10px 0 24px;flex-wrap:wrap;">
       <select id="f-h2h-year" aria-label="Year" style="width:auto;min-width:150px;flex:1;"><option value="">All years</option></select>
       <select id="f-h2h-comp" aria-label="Competition" style="width:auto;min-width:150px;flex:1;"><option value="">All competitions</option></select>
     </div>
@@ -539,7 +542,7 @@
   </section>
 
   <footer style="margin-top:40px;padding-top:20px;border-top:1px solid var(--line);text-align:center;">
-    <p style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--text-dim2);line-height:1.7;">
+    <p style="font-family:'Inter',sans-serif;font-size:12.5px;color:var(--text-dim2);line-height:1.7;">
       A fan-made project tracking jerseys worn in international football matches.<br>
       Not a store &mdash; no products are sold here. Not affiliated with FIFA, UEFA, or any national football association.<br>
       Images may not reflect exactly what was worn on the field. It is merely a reference photo.<br>
