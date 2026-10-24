@@ -246,8 +246,12 @@
   .jersey-stats td.gd-pos{color:var(--win);}
   .jersey-stats td.gd-neg{color:var(--loss);}
   .jersey-stats tbody tr:nth-child(even):not(.total-row){background:var(--surface-2);}
-  #ladder-tbody tr:first-child td{font-weight:700;}
-  #ladder-tbody tr:first-child td:first-child{border-left:3px solid var(--accent);padding-left:9px;}
+  #ladder-tbody tr.rank-first td{font-weight:700;}
+  #ladder-tbody tr.rank-first td:first-child{border-left:3px solid var(--accent);padding-left:9px;}
+  #ladder-box th.sortable{cursor:pointer;user-select:none;white-space:nowrap;}
+  #ladder-box th.sortable:hover{color:var(--accent);}
+  #ladder-box th.sortable .sort-arrow{display:inline-block;width:0.8em;opacity:0.4;font-size:10px;}
+  #ladder-box th.sortable.sort-active .sort-arrow{opacity:1;}
 
   /* ---------- Matchup viewer (detail card) ---------- */
   .matchup{
@@ -529,10 +533,23 @@
       <div class="controls" style="margin-bottom:14px;">
         <select id="f-ladder-year" aria-label="Jersey ladder year"><option value="">All-time</option></select>
         <select id="f-ladder-comp" aria-label="Jersey ladder competition"><option value="">All competitions</option></select>
+        <input type="text" id="f-ladder-search" placeholder="Search for a team&hellip;" aria-label="Search the jersey ladder for a team">
       </div>
       <div class="list-scroll" style="max-height:480px;">
         <table>
-          <thead><tr><th style="text-align:left">#</th><th style="text-align:left">Team</th><th style="text-align:left">Jersey</th><th>GP</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>PTS</th></tr></thead>
+          <thead><tr>
+            <th style="text-align:left">#</th>
+            <th style="text-align:left" class="sortable" data-sort="team">Team<span class="sort-arrow"></span></th>
+            <th style="text-align:left" class="sortable" data-sort="jersey">Jersey<span class="sort-arrow"></span></th>
+            <th class="sortable" data-sort="gp">GP<span class="sort-arrow"></span></th>
+            <th class="sortable" data-sort="w">W<span class="sort-arrow"></span></th>
+            <th class="sortable" data-sort="d">D<span class="sort-arrow"></span></th>
+            <th class="sortable" data-sort="l">L<span class="sort-arrow"></span></th>
+            <th class="sortable" data-sort="gf">GF<span class="sort-arrow"></span></th>
+            <th class="sortable" data-sort="ga">GA<span class="sort-arrow"></span></th>
+            <th class="sortable" data-sort="gd">GD<span class="sort-arrow"></span></th>
+            <th class="sortable" data-sort="pts">PTS<span class="sort-arrow"></span></th>
+          </tr></thead>
           <tbody id="ladder-tbody"></tbody>
         </table>
       </div>
@@ -922,8 +939,11 @@ const ladderToggle = document.getElementById('ladder-toggle');
 const ladderBody = document.getElementById('ladder-body');
 const fLadderYear = document.getElementById('f-ladder-year');
 const fLadderComp = document.getElementById('f-ladder-comp');
+const fLadderSearch = document.getElementById('f-ladder-search');
 const ladderTbody = document.getElementById('ladder-tbody');
 const ladderHeading = document.getElementById('ladder-heading');
+let ladderSortKey = null;   // null = canonical rank order (pts, gd, w, gp, gf)
+let ladderSortDir = -1;     // -1 = highest/Z first, 1 = lowest/A first
 const modeBrowseBtn = document.getElementById('mode-browse');
 const modeH2hBtn = document.getElementById('mode-h2h');
 const h2hFiltersEl = document.getElementById('h2h-filters');
@@ -1328,15 +1348,38 @@ function renderJerseyLadder(){
   });
 
   const list = Object.values(buckets).map(b => Object.assign({}, b, {gd: b.gf - b.ga}));
+  // Canonical standings order decides each row's real rank (#), which stays
+  // fixed no matter what column the table is currently sorted/displayed by.
   list.sort((a,b) => b.pts - a.pts || b.gd - a.gd || b.w - a.w || b.gp - a.gp || b.gf - a.gf);
+  list.forEach((r, i) => { r.rank = i + 1; });
 
-  if(list.length === 0){
-    ladderTbody.innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--text-dim);padding:16px;">No results for this selection.</td></tr>`;
+  document.querySelectorAll('#ladder-box th.sortable').forEach(th => {
+    const active = th.dataset.sort === ladderSortKey;
+    th.classList.toggle('sort-active', active);
+    th.querySelector('.sort-arrow').textContent = active ? (ladderSortDir === -1 ? '▼' : '▲') : '';
+  });
+
+  let display = list;
+  const term = fLadderSearch.value.trim().toLowerCase();
+  if(term) display = display.filter(r => r.team.toLowerCase().includes(term));
+
+  if(ladderSortKey){
+    display = display.slice().sort((a, b) => {
+      const av = a[ladderSortKey], bv = b[ladderSortKey];
+      const cmp = typeof av === 'string' ? av.localeCompare(bv) : av - bv;
+      return cmp * ladderSortDir;
+    });
+  }
+
+  if(display.length === 0){
+    const termSafe = term.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const msg = term ? `No team matches &ldquo;${termSafe}&rdquo;.` : 'No results for this selection.';
+    ladderTbody.innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--text-dim);padding:16px;">${msg}</td></tr>`;
     return;
   }
-  ladderTbody.innerHTML = list.map((r, i) => `
-    <tr>
-      <td style="text-align:left">${i+1}</td>
+  ladderTbody.innerHTML = display.map(r => `
+    <tr class="${r.rank === 1 ? 'rank-first' : ''}">
+      <td style="text-align:left">${r.rank}</td>
       <td style="text-align:left">${r.team}</td>
       <td style="text-align:left">${r.jersey}</td>
       <td>${r.gp}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td>
@@ -1443,6 +1486,21 @@ ladderToggle.addEventListener('click', () => {
 });
 fLadderYear.addEventListener('change', renderJerseyLadder);
 fLadderComp.addEventListener('change', renderJerseyLadder);
+fLadderSearch.addEventListener('input', renderJerseyLadder);
+document.querySelectorAll('#ladder-box th.sortable').forEach(th => {
+  th.addEventListener('click', () => {
+    const key = th.dataset.sort;
+    if(ladderSortKey === key){
+      ladderSortDir *= -1;
+    } else {
+      ladderSortKey = key;
+      // Numbers default highest-first (like the standings they came from);
+      // team/jersey names default A-first.
+      ladderSortDir = (key === 'team' || key === 'jersey') ? 1 : -1;
+    }
+    renderJerseyLadder();
+  });
+});
 
 // Show the snapshot immediately (above), then try to upgrade to live data from the sheet.
 loadLiveData();
