@@ -712,6 +712,12 @@ function renderStats(rows){
   document.getElementById('tracked-pct').textContent = s.trackedPct;
   document.getElementById('kit-count').textContent = s.withPhoto;
   document.getElementById('photo-pct').textContent = s.photoPct;
+  // Currently-showing line's own year range - was never set, leaving the
+  // <b id="year-range"> between its two middots empty (looked like a
+  // stray double dot: "fixtures · · played").
+  const years = [...new Set(rows.map(m => m.year).filter(Boolean))];
+  const rangeEl = document.getElementById('year-range');
+  if(rangeEl) rangeEl.textContent = years.length ? (years.length === 1 ? String(years[0]) : Math.min(...years) + '\u2013' + Math.max(...years)) : '';
 }
 
 // Only shown once a tracker has more than one distinct year of data - until
