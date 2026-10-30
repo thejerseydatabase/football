@@ -697,7 +697,12 @@ function computeStats(rows){
   const now = new Date();
   const todayStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
   const total = rows.length;
-  const occurred = rows.filter(m => m.date && m.date <= todayStr).length;
+  // A fixture only counts as "occurred" for today's own date once its
+  // result has actually been logged - otherwise a match scheduled for
+  // later today (or still in progress) was being counted as already
+  // played just because today's date had arrived, inflating "played"
+  // ahead of what's actually happened.
+  const occurred = rows.filter(m => m.date && (m.date < todayStr || (m.date === todayStr && isPlayed(m)))).length;
   const tracked = rows.filter(isPlayed).length;
   const trackedPct = occurred ? Math.round(tracked / occurred * 100) : 0;
   const withPhoto = rows.filter(m => isPlayed(m) && (m.homeImg || m.awayImg)).length;
