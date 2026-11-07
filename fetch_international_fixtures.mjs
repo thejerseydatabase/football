@@ -10,12 +10,18 @@
 // jersey photo to source, and the real score once the match is played.
 //
 // Usage:
-//   TSDB_KEY=<your free key> node fetch_international_fixtures.mjs
+//   node fetch_international_fixtures.mjs
+//   TSDB_KEY=<your Premium key> node fetch_international_fixtures.mjs
 //
-// Get a free key at https://www.thesportsdb.com/free_sports_api - the
-// shared public test key ("123") works but visibly samples/limits
-// results rather than returning everything, so this will undercount
-// fixtures without your own key.
+// There's no personal key on the free tier - per TheSportsDB's own
+// docs (thesportsdb.com/documentation#authentication), "123" IS the
+// free API key, shared by every free user. Rate limiting is 30
+// requests/minute, but since that's shared globally (not per-user),
+// how fast this actually runs depends on how much other traffic is
+// hitting it at the same time - hence the retry-with-backoff below
+// rather than just giving up on a 429. If this turns out too
+// unreliable in practice, a $9/month Premium key (your own, not
+// shared) is the fallback - set it via TSDB_KEY.
 //
 // How it works: TheSportsDB indexes national teams individually (not
 // as one big "all internationals" list), so this fetches every team
@@ -26,19 +32,18 @@
 // merges the results (a fixture is returned once per team playing in
 // it, so de-duplicated again by event id at the end).
 //
-// Rate-limited to stay well under free-tier limits - this takes a few
-// minutes to run across ~200+ teams. That's fine; this is meant to run
-// once per international window, not continuously.
+// This is meant to run once per international window, not
+// continuously - a full run can take anywhere from ~10 minutes to
+// much longer depending on shared rate-limit pressure from other
+// free-tier users at the time.
 
 const KEY = process.env.TSDB_KEY || '123';
 const BASE = `https://www.thesportsdb.com/api/v1/json/${KEY}`;
-// TheSportsDB's free tier is rate-limited to 30 requests/minute
-// (https://www.thesportsdb.com/documentation#rate-limit) - 2100ms
-// between requests keeps a safety margin under that (~28.5/min). A
-// full run is ~200-250 teams plus ~15 to build the team list, so
-// roughly 8-9 minutes end to end - fine for something run once per
-// international window.
+// 2100ms keeps us at ~28.5/min on our own - the retry logic in getJson
+// handles the rest when the shared 30/min pool is under pressure from
+// other free users.
 const DELAY_MS = 2100;
+const MAX_RETRIES = 6;
 
 // The competitions whose team lists between them cover essentially
 // every FIFA member association - World Cup qualifying is run per
@@ -64,10 +69,32 @@ const SEED_LEAGUES = [
 
 function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
 
+// Retries a 429 (rate limited) or 5xx (transient server error) with
+// growing backoff instead of giving up on that one team/league - the
+// free key's 30/min limit is shared across every free user, so a 429
+// here often just means someone else's traffic, not that we're over
+// our own budget.
 async function getJson(url){
-  const res = await fetch(url);
-  if(!res.ok) throw new Error(`${res.status} ${res.statusText} for ${url}`);
-  return res.json();
+  for(let attempt = 0; attempt <= MAX_RETRIES; attempt++){
+    let res;
+    try {
+      res = await fetch(url);
+    } catch(e){
+      if(attempt === MAX_RETRIES) throw e;
+      await sleep(3000 * (attempt + 1));
+      continue;
+    }
+    if(res.status === 429 || res.status >= 500){
+      if(attempt === MAX_RETRIES) throw new Error(`${res.status} ${res.statusText} for ${url} (gave up after ${MAX_RETRIES} retries)`);
+      const retryAfter = Number(res.headers.get('retry-after'));
+      const waitMs = retryAfter ? retryAfter * 1000 : 3000 * (attempt + 1);
+      console.error(`  ...${res.status}, waiting ${Math.round(waitMs/1000)}s before retrying`);
+      await sleep(waitMs);
+      continue;
+    }
+    if(!res.ok) throw new Error(`${res.status} ${res.statusText} for ${url}`);
+    return res.json();
+  }
 }
 
 async function collectTeamIds(){
@@ -136,7 +163,7 @@ function toRow(ev){
 
 async function main(){
   if(KEY === '123'){
-    console.error('Using the shared public test key - results will be incomplete. Set TSDB_KEY to your own free key for a full run.\n');
+    console.error('Using the free API key (123, shared by all free users) - if this run hits a lot of rate-limit waits, that\'s other people\'s traffic, not yours. It\'ll keep retrying rather than give up.\n');
   }
   console.error('Collecting national team list...');
   const teamIds = await collectTeamIds();
